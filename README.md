@@ -1,2 +1,2 @@
 # Metaheuristicas
-Metaheurísticas - Asignatura del grado en Ingeniería Informática
+Asignatura del grado en Ingeniería Informática
