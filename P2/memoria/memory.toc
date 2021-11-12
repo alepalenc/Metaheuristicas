@@ -1,0 +1,26 @@
+\babel@toc {spanish}{}
+\contentsline {section}{\numberline {1}Formulación del problema}{2}{section.1}%
+\contentsline {section}{\numberline {2}Consideraciones comunes a los algoritmos empleados al problema}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Esquema de representación de soluciones}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Función objetivo}{3}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Operadores}{3}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Generación de solución aleatoria}{3}{subsubsection.2.3.1}%
+\contentsline {subsubsection}{\numberline {2.3.2}Selección}{4}{subsubsection.2.3.2}%
+\contentsline {subsubsection}{\numberline {2.3.3}Cruce uniforme}{4}{subsubsection.2.3.3}%
+\contentsline {subsubsection}{\numberline {2.3.4}Cruce por posición}{7}{subsubsection.2.3.4}%
+\contentsline {subsubsection}{\numberline {2.3.5}Mutación}{7}{subsubsection.2.3.5}%
+\contentsline {section}{\numberline {3}Algoritmos}{9}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Algoritmos genéticos generacionales}{9}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Algoritmos genéticos estacionarios}{11}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Algoritmos meméticos}{13}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}AM-(10,1.0)}{15}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.2}AM-(10,0.1)}{16}{subsubsection.3.3.2}%
+\contentsline {subsubsection}{\numberline {3.3.3}AM-(10,0.1mej)}{16}{subsubsection.3.3.3}%
+\contentsline {section}{\numberline {4}Procedimiento de desarrollo de la práctica}{16}{section.4}%
+\contentsline {section}{\numberline {5}Experimentos y análisis de resultados}{17}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Experimentos}{17}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Resultados}{17}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Análisis}{25}{subsection.5.3}%
+\contentsline {subsubsection}{\numberline {5.3.1}Análisis por calidad}{25}{subsubsection.5.3.1}%
+\contentsline {subsubsection}{\numberline {5.3.2}Análisis por tiempos}{25}{subsubsection.5.3.2}%
+\contentsline {subsubsection}{\numberline {5.3.3}Conclusiones}{26}{subsubsection.5.3.3}%

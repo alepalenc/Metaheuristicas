@@ -1,0 +1,43 @@
+#include<iostream>
+#include<vector>
+
+
+using namespace std;
+
+
+void readInput(vector<vector<double> > &matrix){
+    double dist;
+    for(unsigned i=0; i<matrix.size(); ++i){
+        for(unsigned j=i+1; j<matrix.size(); ++j){
+            cin >> dist >> dist >> dist;
+            matrix[i][j] = matrix[j][i] = dist;
+        }
+    }
+}
+
+
+void printMatrix(vector<vector<double> > &matrix){
+    for(unsigned i=0; i<matrix.size(); ++i){
+        for(unsigned j=0; j<matrix.size(); ++j)
+            cout << matrix[i][j] << "\t";
+        cout << endl;
+    }
+}
+
+
+
+
+
+
+int main(int argc, char **argv){
+    int n, m;
+    
+    cin >> n >> m;
+    vector<double> v(n, 0);
+    vector<vector<double> > matrix(n, v);
+    redInput(matrix);
+    
+    greedy(matrix, m);
+    
+    return 0;
+}

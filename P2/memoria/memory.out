@@ -1,0 +1,25 @@
+\BOOKMARK [1][-]{section.1}{Formulaci\363n del problema}{}% 1
+\BOOKMARK [1][-]{section.2}{Consideraciones comunes a los algoritmos empleados al problema}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Esquema de representaci\363n de soluciones}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Funci\363n objetivo}{section.2}% 4
+\BOOKMARK [2][-]{subsection.2.3}{Operadores}{section.2}% 5
+\BOOKMARK [3][-]{subsubsection.2.3.1}{Generaci\363n de soluci\363n aleatoria}{subsection.2.3}% 6
+\BOOKMARK [3][-]{subsubsection.2.3.2}{Selecci\363n}{subsection.2.3}% 7
+\BOOKMARK [3][-]{subsubsection.2.3.3}{Cruce uniforme}{subsection.2.3}% 8
+\BOOKMARK [3][-]{subsubsection.2.3.4}{Cruce por posici\363n}{subsection.2.3}% 9
+\BOOKMARK [3][-]{subsubsection.2.3.5}{Mutaci\363n}{subsection.2.3}% 10
+\BOOKMARK [1][-]{section.3}{Algoritmos}{}% 11
+\BOOKMARK [2][-]{subsection.3.1}{Algoritmos gen\351ticos generacionales}{section.3}% 12
+\BOOKMARK [2][-]{subsection.3.2}{Algoritmos gen\351ticos estacionarios}{section.3}% 13
+\BOOKMARK [2][-]{subsection.3.3}{Algoritmos mem\351ticos}{section.3}% 14
+\BOOKMARK [3][-]{subsubsection.3.3.1}{AM-\(10,1.0\)}{subsection.3.3}% 15
+\BOOKMARK [3][-]{subsubsection.3.3.2}{AM-\(10,0.1\)}{subsection.3.3}% 16
+\BOOKMARK [3][-]{subsubsection.3.3.3}{AM-\(10,0.1mej\)}{subsection.3.3}% 17
+\BOOKMARK [1][-]{section.4}{Procedimiento de desarrollo de la pr\341ctica}{}% 18
+\BOOKMARK [1][-]{section.5}{Experimentos y an\341lisis de resultados}{}% 19
+\BOOKMARK [2][-]{subsection.5.1}{Experimentos}{section.5}% 20
+\BOOKMARK [2][-]{subsection.5.2}{Resultados}{section.5}% 21
+\BOOKMARK [2][-]{subsection.5.3}{An\341lisis}{section.5}% 22
+\BOOKMARK [3][-]{subsubsection.5.3.1}{An\341lisis por calidad}{subsection.5.3}% 23
+\BOOKMARK [3][-]{subsubsection.5.3.2}{An\341lisis por tiempos}{subsection.5.3}% 24
+\BOOKMARK [3][-]{subsubsection.5.3.3}{Conclusiones}{subsection.5.3}% 25

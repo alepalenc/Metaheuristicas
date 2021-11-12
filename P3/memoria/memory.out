@@ -1,0 +1,17 @@
+\BOOKMARK [1][-]{section.1}{Formulaci\363n del problema}{}% 1
+\BOOKMARK [1][-]{section.2}{Consideraciones comunes a los algoritmos empleados al problema}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Esquema de representaci\363n de soluciones}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Funci\363n objetivo}{section.2}% 4
+\BOOKMARK [2][-]{subsection.2.3}{Generaci\363n de soluci\363n aleatoria}{section.2}% 5
+\BOOKMARK [1][-]{section.3}{Algoritmos}{}% 6
+\BOOKMARK [2][-]{subsection.3.1}{Enfriamiento simulado}{section.3}% 7
+\BOOKMARK [2][-]{subsection.3.2}{B\372squeda Multiarranque B\341sica}{section.3}% 8
+\BOOKMARK [2][-]{subsection.3.3}{B\372squeda Local Iterativa}{section.3}% 9
+\BOOKMARK [1][-]{section.4}{Procedimiento de desarrollo de la pr\341ctica}{}% 10
+\BOOKMARK [1][-]{section.5}{Experimentos y an\341lisis de resultados}{}% 11
+\BOOKMARK [2][-]{subsection.5.1}{Experimentos}{section.5}% 12
+\BOOKMARK [2][-]{subsection.5.2}{Resultados}{section.5}% 13
+\BOOKMARK [2][-]{subsection.5.3}{An\341lisis}{section.5}% 14
+\BOOKMARK [3][-]{subsubsection.5.3.1}{An\341lisis por calidad}{subsection.5.3}% 15
+\BOOKMARK [3][-]{subsubsection.5.3.2}{An\341lisis por tiempos}{subsection.5.3}% 16
+\BOOKMARK [3][-]{subsubsection.5.3.3}{Conclusiones}{subsection.5.3}% 17

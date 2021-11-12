@@ -1,0 +1,11 @@
+\babel@toc {spanish}{}
+\contentsline {section}{\numberline {1}Descripción de la metaheurística}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Idea que la inspira}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Estructura de datos que guarda una solución}{2}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Colonización}{2}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Invasión}{3}{subsection.1.4}%
+\contentsline {subsection}{\numberline {1.5}Desarrollo}{5}{subsection.1.5}%
+\contentsline {subsection}{\numberline {1.6}Primera versión de la metaheurística}{5}{subsection.1.6}%
+\contentsline {section}{\numberline {2}Análisis de resultados}{7}{section.2}%
+\contentsline {section}{\numberline {3}Hibridación}{10}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Análisis de resultados}{11}{subsection.3.1}%

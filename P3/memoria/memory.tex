@@ -1,0 +1,769 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[T1]{fontenc} 
+\usepackage[left=2.00cm, right=2.00cm, top=2.00cm, bottom=2.00cm]{geometry}
+\usepackage{acronym}
+\usepackage{listings}
+\usepackage{graphicx}
+\graphicspath{ {images/} }
+\usepackage{hyperref}
+
+\usepackage{multirow}
+\usepackage[table,xcdraw]{xcolor}
+
+\usepackage[export]{adjustbox}
+\usepackage{subcaption}
+
+\usepackage[ruled]{algorithm2e}
+
+%%Sobre el código
+\usepackage{xcolor}
+\usepackage{xparse}
+\NewDocumentCommand{\codeword}{v}{%
+	\texttt{\textcolor{blue}{#1}}%
+}
+
+\setlength{\parindent}{1em}
+\setlength{\parskip}{1em}
+
+\spanishdecimal{.}
+
+
+
+
+
+\begin{document}
+
+\begin{titlepage}
+	\centering
+	{\bfseries\scshape\Huge Práctica 3.a \par}
+	\vspace{3cm}
+	{\scshape\Huge Búsquedas por Trayectorias para el Problema de la Máxima Diversidad \par}
+	\vfill
+	{\Large Alejandro Palencia Blanco \par}
+	\vspace{1cm}
+	{\Large DNI: 77177568X \par}
+	\vspace{1cm}
+	{\Large alepalenc@correo.ugr.es \par}
+	\vspace{1cm}
+	\vfill
+	{\Large Grupo y horario de prácticas: Jueves 17:30-19:30 \par}
+\end{titlepage}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section{Formulación del problema}
+
+El \textbf{Problema de la Máxima Diversidad} (\textit{Maximum Diversity Problem}, MDP) es un problema de optimización combinatoria que pertenece a la clase de complejidad NP-completo, luego su resolución es compleja. Partiendo de un conjunto inicial $S$ de $n$ elementos, el problema general consiste en seleccionar un subconjunto $Sel$ de $m$ elementos que maximice la diversidad entre los elementos escogidos. La diversidad se calcula a partir de las distancias entre los elementos, las cuales se almacenan en una matriz $D = (d_{ij})$ de dimensión $n \times n$.
+
+Existen distintas variantes del problema que dependen de la forma en que se calcula la diversidad:
+
+\begin{itemize}
+	\item \textit{MaxSum}: La diversidad se calcula como la suma de las
+	distancias entre cada par de elementos seleccionados
+	\item \textit{MaxMin}: La diversidad se calcula como la distancia
+	mínima entre los pares de elementos seleccionados
+	\item \textit{Max Mean Model}: La diversidad se calcula como el promedio de
+	las distancias entre los pares de elementos seleccionados
+	\item \textit{Generalized Max Mean}: Existen pesos asociados a los elementos
+	empleados en el denominador al calcular el promedio de
+	distancias (hay un orden de importancia de los elementos)
+\end{itemize}
+
+En esta práctica, trabajaremos con el criterio \textit{MaxSum}, luego el problema se puede formular de la siguiente forma:
+$$ \text{Maximizar  } z_{MS}(x) = \sum_{i=1}^{n-1} \sum_{j=i+1}^{n} d_{ij} x_i x_j $$
+$$ \text{Sujeto a  } \sum_{i=1}^{n} x_i = m $$
+$$ x_i \in \{0,1\} \ \forall i \in \{1,\dots,n\} $$
+
+Donde $x$ es un vector binario con $n$ componentes que indica los $m$ elementos seleccionados y $d_{ij}$ es la distancia entre los elementos $i$ y $j$.
+
+
+
+
+
+
+
+
+
+
+\section{Consideraciones comunes a los algoritmos empleados al problema}
+
+Los algoritmos que emplearemos en esta práctica comparten una serie de características comunes que serán descritas en esta sección. Concretamente, aquí explicaremos el esquema de representación de las soluciones, la función objetivo y los distintos operadores comunes.
+
+El lenguaje utilizado para la implementación de la práctica ha sido \codeword{C++} y he usado las siguientes bibliotecas:
+
+\begin{itemize}
+	\item \codeword{<iostream>}
+	\item \codeword{<ctime>} para medir tiempos
+	\item \codeword{<cmath>} para lsa funciones $\log$ y $\exp$
+	\item \codeword{<cstdlib>} para las funciones \codeword{rand} y \codeword{srand}
+	\item \codeword{<stl>} para la estructura de datos \codeword{vector}
+	\item \codeword{<algorithm>} para la función \codeword{swap} y \codeword{random_shuffle}
+\end{itemize}
+
+
+\subsection{Esquema de representación de soluciones}
+
+En esta práctica volvemos a usar únicamente el esquema de soluciones de la primera práctica, que consiste en representar los elementos de $S$ mediante números enteros del $0$ al $n-1$. Por tanto, una solución factible está formada por un subconjunto $Sel \subset S = \{0,\dots,n-1\}$ tal que $|Sel| = m$.
+
+En todos los algoritmos se trabaja con una estructura \codeword{Solucion}, que está constituida por los siguientes elementos:
+
+\begin{itemize}
+	\item Un vector de enteros \codeword{selected} en el que se almacenan los $m$ elementos de $S$ que determinan una solución del problema.
+	\item Un vector de enteros \codeword{not_selected} en el que se almacenan los $n-m$ elementos de $S$ no seleccionados.
+	\item Un flotante \codeword{fitness}, que guarda el \textit{fitness} de la solución.
+\end{itemize}
+
+Como el orden de los elementos en los vectores \codeword{selected} y \codeword{not_selected} es irrelevante, esto será aprovechado en determinados puntos de la implementación para eliminar elementos en ellos de una forma más rápida, o para elegir aleatoriamente subconjuntos de los mismos (barajando el vector y eligiendo los elementos que se encuentren en las primeras posiciones).
+
+
+
+\subsection{Función objetivo}
+
+La función objetivo que he implementado recibe como parámetros una solución y la matriz de distancias y simplemente actualiza el valor de fitness asociado a dicha solución. Para ello, inicializa su fitness a 0 y calcula su fitness sumando las distancias entre cada para de elementos seleccionados.
+
+\begin{algorithm}[H]
+	\caption{evaluateFitness}
+	\KwData{sol : solución,\\
+		\qquad matrix : matriz de distancias}
+	\Begin{
+		$sol.fitness \gets 0$
+	
+		\For{ $element_1, element_2 \in sol.selected$ }{
+			$sol.fitness \gets sol.fitness + matrix[element_1][element_2]$
+		}
+	}
+\end{algorithm}
+
+Además de ésta, también haré uso de otra función que calcule la contribución de un elemento a una solución. Esta contribución se obtiene sumando las distancias de dicho elemento a cada uno de los elementos seleccionados, y será usada en la factorización del movimiento de intercambio en los algoritmos de Búsqueda Local y Enfriamiento Simulado.
+
+\begin{algorithm}[H]
+	\caption{contribution}
+	\KwData{sol : solución,\\
+		\qquad element : elemento cuya contribución se quiere calcular,\\
+		\qquad matrix : matriz de distancias}
+	\KwResult{contrib : contribución del elemento}
+	\Begin{
+		$contrib \gets 0$
+		
+		\For{ $sel\_element \in sol.selected$ }{
+			$contrib \leftarrow contrib + matrix[element][sel\_element]$
+		}
+	}
+\end{algorithm}
+
+
+
+
+
+
+\subsection{Generación de solución aleatoria}
+
+El operador de generación de solución aleatoria recibe como parámetros una solución, el número total de elementos ($n$) y el número de elementos que una solución debe tener seleccionados para ser factible ($m$). Al finalizar, devuelve una solución factible. Para ello, introduce primero todos los elementos en el vector de no seleccionados, luego baraja dicho vector y, por último, mueve aleatoriamente $m$ elementos al vector de seleccionados (inicialmente vacío).\\
+
+\begin{algorithm}[H]
+	\caption{generateRandomSolution}
+	\KwData{sol : solución\\
+		\qquad n : número total de elementos,\\
+		\qquad m : número de elementos que una solución debe tener seleccionados para ser factible\\}
+	\Begin{
+		$sol.selected \gets \{\}$
+		
+		\hfill ///// Introduzco todos los elementos en $not\_selected$ /////
+		
+		$sol.not\_selected \gets \{0,1,\dots,n-1\}$
+		
+		\hfill ///// Barajo el vector de elementos no seleccionados /////
+		
+		$random\_shuffle(sol.not\_selected)$
+		
+		\hfill ///// Muevo aleatoriamente $m$ elementos de $not\_selected$ a $selected$ /////
+		
+		\For{ $i \in \{0,\dots,m-1\}$ }{
+			
+			$random\_element \leftarrow rand() \ \% \ |sol.not\_selected|$
+			
+			$swap(sol.not\_selected[n-1], sol.not\_selected[random\_element])$
+			
+			$sol.selected \gets sol.selected \cup \{sol.not\_selected[n-1]\}$
+			
+			$sol.not\_selected \gets sol.not\_selected - \{sol.not\_selected[n-1]\}$
+		}
+	}
+\end{algorithm}
+
+
+
+
+
+
+\section{Algoritmos}
+
+\subsection{Enfriamiento simulado}
+
+El algoritmo de Enfriamiento Simulado está diseñado con el objetivo de intentar evitar óptimos locales de baja calidad. Para ello, este algoritmo permite la aceptación de soluciones en el vecindario de la solución actual que sean peores que ésta con una determinada probabilidad. Esto se implementa a través de temperaturas con un esquema de enfriamiento.
+
+El algoritmo empieza generando aleatoriamente una solución inicial, $sol$, y calculando la temperatura inicial con la que empezará a ejecutarse:
+
+$$T_0 = \frac{\mu \cdot sol.fitness}{-\log(\phi)} \text{, \qquad donde } \phi = \mu = 0.3$$
+
+Esta temperatura disminuirá progresivamente al final de cada iteración del bucle externo hasta que se llegue al límite de evaluaciones fijado o si no se ha aceptado ninguna nueva solución durante la iteración actual.
+
+Para aceptar nuevas soluciones, tenemos un bucle interno en el que se hará uso de dos constantes: 
+
+\begin{itemize}
+	\item $max_{vecinos} = 10 \cdot m$: número máximo de vecinos a generar en el bucle interno.
+	\item $max_{exitos} = 0.1 \cdot max_{vecinos}$: número máximo de vecinos aceptados en el bucle interno.
+\end{itemize}
+
+En cada iteración del bucle interno, se generará un nuevo vecino mediante el operador de intercambio (intercambiando aleatoriamente un elemento seleccionado por otro no seleccionado) y se comparará con la solución actual. Si el vecino $v$ es mejor que la solución actual $sol$, siempre es aceptado. Si no, se aceptará si un número generado en una distribución uniforme $[0,1]$ es menor o igual que $\exp((v.fitness-sol.fitness)/T_k)$, donde $T_k$ es la temperatura actual.
+
+El esquema de enfriamiento usado en esta práctica es el de Cauchy modificado. Fijada una temperatura final $T_f = 10^{-3}$ y un número de enfriamientos $M$, el algoritmo inicializa una constante $\beta$ que depende de $M$ y cada vez que se produce un enfriamiento se modifica la temperatura actual mediante la siguiente regla:
+
+$$T_{k+1} = \frac{T_k}{1+\beta \cdot T_k} \text{, \qquad donde } M = \frac{max_{evaluaciones}}{max_{vecinos}} \text{ y } \beta = \frac{T_0-T_f}{M \cdot T_0 \cdot T_f}$$
+
+
+
+\SetKwRepeat{Do}{do}{while}
+\begin{algorithm}[H]
+	\caption{ES}
+	\KwData{matrix : matriz de distancias,\\
+		\qquad m : número de elementos que una solución debe tener seleccionados para ser factible\\}
+	\Begin{
+		\hfill ///// Genero una solución inicial aleatoriamente /////
+		
+		$generateRandomSolution(sol, n, m)$
+		
+		$evaluateFitness(sol, matrix)$
+		
+		$best\_sol \gets sol$
+		
+		\hfill ///// Inicializo constantes /////
+		
+		$MAX\_VECINOS \gets 10 \cdot m$
+		
+		$MAX\_EXITOS \gets m$
+		
+		$MAX\_EVALUATIONS \gets 100000$
+		
+		$M \gets MAX\_EVALUATIONS/MAX\_VECINOS$
+		
+		$PHI \gets 0.3$
+		
+		$MU \gets 0.3$
+		
+		$T_0 \gets (MU \cdot sol.fitness)/(-\log(PHI))$
+		
+		$T_f \gets 0.001$
+		
+		\While{ $T_f \geq T_0$ }{ $T_f \gets 0.1 \cdot T_f$ }
+		
+		$BETA \gets (T_0-T_f)/(M \cdot T_0 \cdot T_f)$
+		
+		\hfill ///// Aplico enfriamiento simulado /////
+		
+		$t \gets T_0$
+		
+		$evaluations \gets 1$
+		
+		\Do{ $evaluations < MAX\_EVALUATIONS \quad and \quad num\_exitos > 0$ }{
+			$num\_vecinos \gets 0$
+			
+			$num\_exitos \gets 0$
+			
+			\While{ $num\_vecinos < MAX\_VECINOS \quad and $\\$\quad num\_exitos < MAX\_EXITOS \quad and$\\$\quad evaluations < MAX\_EVALUATIONS$ }{
+				$i \gets rand() \% |sol.selected|$
+				
+				$sel\_element \gets sol.selected[i]$
+				
+				$j \gets rand() \% |sol.not\_selected|$
+				
+				$not\_sel\_element \gets sol.not\_selected[j]$
+				
+				$inc\_fitness \gets ( contribution(sol,not\_sel\_element,matrix)$\\$\qquad\qquad - matrix[sel\_element][not\_sel\_element] )$\\$\qquad\qquad - contribution(sol,sel\_element,matrix)$
+				
+				$u \gets rand()/RAND\_MAX$
+				
+				\If{ $inc\_fitness > 0 \quad or \quad u \leq \exp(inc\_fitness/t)$ }{
+					$swap(sol.selected[i], sol.not\_selected[j])$
+					
+					$sol.fitness \gets sol.fitness + inc\_fitness$
+					
+					$num\_exitos \gets num\_exitos + 1$
+					
+					\If{ $sol.fitness > best\_sol.fitness$ }{
+						$best\_sol \gets sol$
+					}
+				}
+				
+				$num\_vecinos \gets num\_vecinos + 1$
+				
+				$evaluations \gets evaluations + 1$
+			}
+			
+			$t \gets t/(1+BETA \cdot t)$
+		}
+		
+		
+	}
+\end{algorithm}
+
+\subsection{Búsqueda Multiarranque Básica}
+
+Un gran problema del algoritmo de Búsqueda Local es su alta dependencia de la solución inicial aleatoriamente generada, pues ésta deterina en gran medida el óptimo local que será alcanzado. La Búsqueda Multiarranque Básica intenta reducir esta dependencia ejecutando Búsqueda Local sucesivas vecces sobre distintas soluciones iniciales generadas aleatoriamente. El algoritmo devolverá la mejor solución encontrada.
+
+El número de evaluaciones se reparte de de forma equitativa entre las suucesivas ejecuciones de Búsqueda Local. Como aplicaremos 10 iteraciones de Búsqueda Local y el número total de evaluaciones es 100000, el número de evaluaciones que tendrá como máximo cada BL será 10000.\\
+
+\begin{algorithm}[H]
+	\caption{BMB}
+	\KwData{matrix : matriz de distancias,\\
+		\qquad m : número de elementos que una solución debe tener seleccionados para ser factible\\}
+	\Begin{
+		\hfill ///// Inicializo constantes /////
+		
+		$ITERATIONS \gets 10$
+		
+		$MAX\_EVALUATIONS\_LS \gets 10000$
+		
+		\hfill ///// Aplico BMB /////
+		
+		$generateRandomSolution(best\_sol, n, m)$
+		
+		$evaluateFitness(best\_sol, matrix)$
+		
+		$localSearch(best\_sol, MAX\_EVALUATIONS\_LS, matrix)$
+		
+		\For{ $i \in \{1,\dots,ITERATIONS-1\}$ }{
+			$generateRandomSolution(sol, n, m)$
+			
+			$evaluateFitness(sol, matrix)$
+			
+			$localSearch(sol, MAX\_EVALUATIONS\_LS, matrix)$
+			
+			\If{ $sol.fitnesss > best\_sol.fitness$ }{
+				$swap(best\_sol, sol)$
+			}
+		}
+		
+		
+	}
+\end{algorithm}
+
+
+
+Aplicaremos el algoritmo de Búsqueda Local del primer mejor desarrollado en la práctica 1. Este algoritmo finaliza cuando se alcanza el número máximo de evaluaciones o cuando no se encuentre una solución mejor en todo el vecindario.
+
+La exploración del vecindario se realiza ordenando los elementos seleccionados de menor a mayor contribución e iterando en este orden sobre ellos. A continuación, se recorren los elementos no seleccionados aleatoriamente. Para cada par de elementos seleccionado y no seleccionado, se aplica una factorización de la función objetivo que consiste en calcular las contribuciones ambos elementos a la solución actual. Si la contribución del elemento no seleccionado es mayor, entonces se aplica el operador de intercambio de vecino sobre la solución (que intercambia el elemento seleccionado por el no seleccionado).\\
+
+\begin{algorithm}[H]
+	\caption{localSearch}
+	\KwData{ sol : solución sobre la que se aplica búsqueda local,\\
+		\qquad max\_evaluations : número máximo de evaluaciones,\\
+		\qquad matrix : matriz de distancias}
+	\Begin{
+		$evaluations \gets 0$
+		
+		\Do{ $exchange \quad and \quad evaluations < max\_evaluations$ }{
+			$exchange \gets false$
+			
+			\For{ $i \in \{0,\dots,|selected|-1\} \quad and \quad !exchange \quad and \quad evaluations < max\_evaluations$ }{
+				\hfill ///// Encuentro el siguiente elemento seleccionado con menor contribución /////
+				
+				$worst\_element\_contrib \gets contribution(selected, selected[i], matrix)$
+				
+				\For{ $j \in \{i+1,\dots,|selected|-1\}$ }{
+					$element\_contrib \gets contribution(selected, selected[j], matrix)$
+					
+					\If{$element\_contrib < worst\_element\_contrib$}{
+						$swap(selected[i], selected[j])$
+						
+						$worst\_element\_contrib \gets element\_contrib$
+					}
+				}
+				
+				\For{ $j \in \{0,\dots,|not\_selected|-1\} \quad and \quad !exchange \quad and \quad evaluations < 400$ }{
+					
+					\hfill ///// Calculo la contribución del siguiente elemento no seleccionado /////
+					
+					$element\_contrib \gets contribution(selected, not\_selected[j], matrix)$\\$\qquad\qquad - matrix[selected[i]][not\_selected[j]]$
+					
+					$evaluations \gets evaluations + 1$
+					
+					\hfill ///// Si tiene mayor contribución que el elemento seleccionado, los intercambio /////
+					
+					\If{ $element\_contrib > worst\_element\_contrib$ }{
+						$swap(selected[i], not\_selected[j])$
+						
+						$sol.fitness \gets sol.fitness + element\_contrib - worst\_element\_contrib$
+						
+						$exchange \gets true$
+					}
+				}
+			}
+		}
+	}
+\end{algorithm}
+
+
+\subsection{Búsqueda Local Iterativa}
+
+El algoritmo de Búsqueda Local Iterativa es otro algoritmo multiarranque que, al igual que BMB, empieza generando una solución inicial aleatoriamente y aplicando sobre ella Búsqueda Local con un máximo de 10000 evaluaciones. La diferencia con BMB se encuentra en el resto de iteraciones, pues en vez de generar aleatoriamente otra solución, aplicamos un operador de mutación sobre la mejor solución encontrada hasta el momento, y luego una Búsqueda Local. Si la solución resultante es mejor que la mejor solución encontrada hasta el momento, entonces actualizamos la mejor solución. Por último, aplicamos el criterio del mejor como criterio de aceptación, es decir, usamos la mejor solución como aquella a la que aplicar mutación y Búsqueda Local en la siguiente iteración.\\
+
+\begin{algorithm}[H]
+	\caption{ILS}
+	\KwData{matrix : matriz de distancias,\\
+		\qquad m : número de elementos que una solución debe tener seleccionados para ser factible\\}
+	\Begin{
+		\hfill ///// Inicializo constantes /////
+		
+		$ITERATIONS \gets 10$
+		
+		$MAX\_EVALUATIONS\_LS \gets 10000$
+		
+		$ELEMENTS\_TO\_MUTATE \gets m/10$
+		
+		\hfill ///// Genero solución aleatoria /////
+		
+		$generateRandomSolution(sol, n, m)$
+		
+		$evaluateFitness(sol, matrix)$
+		
+		$localSearch(sol, MAX\_EVALUATIONS\_LS, matrix)$
+		
+		$best\_sol \gets sol$
+		
+		\hfill ///// Aplico ILS /////
+		
+		\For{ $i \in \{1,\dots,ITERATIONS-1\}$ }{
+			$mutation(sol, ELEMENTS\_TO\_MUTATE, matrix)$
+			
+			$localSearch(sol, MAX\_EVALUATIONS\_LS, matrix)$
+			
+			\eIf{ $sol.fitnesss > best\_sol.fitness$ }{
+				$best\_sol \gets sol$
+			}{
+				$sol \gets best\_sol$
+			}
+		}
+		
+		
+	}
+\end{algorithm}
+
+El operador de mutación simplemente aplica el operador de intercambio $t=0.1 \cdot m$ veces sobre elementos distintos de los conjuntos de elementos seleccionados y no seleccionados. El objetivo de ello es provocar un cambio brusco en la solución actual que luego pueda ser aprovechado por Búsqueda Local. Para ello, barajo ambos conjuntos de elementos e intercambio las primeras $t$ posiciones de ambos.\\
+
+\begin{algorithm}[H]
+	\caption{mutation}
+	\KwData{ sol : solución sobre la que se aplica búsqueda local,\\
+		\qquad elements\_to\_mutate : número de elementos a mutar,\\
+		\qquad matrix : matriz de distancias}
+	\Begin{
+		\hfill ///// Barajo los vectores de elementos seleccionados y no seleccionados /////
+		
+		$random\_shuffle(sol.selected)$\\
+		
+		$random\_shuffle(sol.not\_selected)$
+		
+		\hfill ///// Muto los primeros elementos de ambos conjuntos y actualizo el fitness  /////
+		
+		\For{ $i \in \{0,\dots,elements\_to\_mutate\}$ }{
+			$sol.fitness \gets ( contribution(sol,sol.not\_selected[i],matrix)$\\$\qquad\qquad - matrix[sol.selected[i]][sol.not\_selected[i]] )$\\$\qquad\qquad - contribution(sol,sol.selected[i],matrix)$
+			
+			$swap(sol.selected[i],sol.not\_selected[i])$
+		}
+		
+		
+	}
+\end{algorithm}
+
+El algoritmo ILS-ES es similar a ILS, con la única diferencia de que se sustituye el algoritmo de Búsqueda Local empleado hasta ahora por el de Enfriamiento Simulado.
+
+
+
+
+
+
+
+\section{Procedimiento de desarrollo de la práctica}
+
+Cada algoritmo ha sido implementado en un fichero independiente que incluye todas las funciones que necesita. Los códigos fuentes se encuentran en el directorio \codeword{src}. Las 30 instancias proporcionadas para este problema se encuentran en el directorio \codeword{input}, (por motivos de espacio, en la entrega de la práctica este directorio está inicialmente vacío, pero si se quiere ejecutar los algoritmos sobre dichas instancias solo hay que introducirlas en él). Además, el proyecto también dispone de un directorio \codeword{bin} para los binarios y otro llamado \codeword{output} para guardar los resultados devueltos por los algoritmos. Todos estos directorios se encuentran dentro del directorio \codeword{software}.
+
+Para automatizar todo el proceso, he creado un script en \codeword{bash} llamado \codeword{executeAlgorithms.sh} y un archivo \codeword{makefile}. El primero ejecuta todos los algoritmos con cada una de las 30 instancias del problema y guarda los resultados obtenidos por cada algoritmo en un fichero \codeword{.dat} dentro del directorio \codeword{output}. Por otro lado, el archivo \codeword{makefile} dispone de los siguientes comandos:
+
+\begin{itemize}
+	\item \codeword{bin/<algoritmo>}: compila el código fuente con el algoritmo especificado (ES, BMB, ILS, ILS-ES)
+	\item \codeword{example<algoritmo>}: compila el algoritmo especificado y lo ejecuta con tres instancias del problema con distintos tamaños, mostrando los resultados por la terminal
+	\item \codeword{compile_all}: compila todos los algoritmos
+	\item \codeword{all}: compila todos los algoritmos y ejecuta el script \codeword{executeAlgorithms.sh}
+	\item \codeword{clean}: elimina el contenido de los directorios \codeword{bin} y \codeword{output}
+\end{itemize}
+
+El ordenador en el que se han realizado los experimentos tiene 13.7 GiB de memoria RAM y un procesador AMD Ryzen 7 3700u. El sistema operativo que tiene instalado es Ubuntu 20.04.2.
+
+
+
+
+
+
+\section{Experimentos y análisis de resultados}
+
+\subsection{Experimentos}
+
+Para evaluar el rendimiento de cada algoritmo y compararlos entre sí, los ejecutamos sobre los 30 casos proporcionados. Estos casos se pueden clasificar en 3 grupos en función del comienzo del nombre del fichero que los contiene. Cada uno de estos grupos está formado por 10 casos y tienen las siguientes características:
+
+\begin{itemize}
+	\item MDG-a: $n = 500$, $m = 50$, distancias racionales
+	\item MDG-b: $n = 2000$, $m = 200$, distancias racionales
+	\item MDG-c: $n = 3000$, $m \in \{300,400,500,600\}$, distancias enteras
+\end{itemize}
+
+Como podemos ver, con cada letra los valores de $n$ y $m$ aumentan, luego también es esperable que aumente el tiempo de ejecución.
+
+En cuanto a las semillas utilizadas, he utilizado la sentencia \codeword{srand(1)} para fijar la semilla en todos los algoritmos.
+
+
+
+
+\subsection{Resultados}
+
+Podemos ver los tiempos y las desviaciones obtenidas por cada algoritmo en las tablas \ref{table:ES} (ES), \ref{table:BMB} (BMB), \ref{table:ILS} (ILS) y \ref{table:ILS_ES} (ILS-ES). Por último, en la tabla \ref{table:resultados_globales} se recogen los resultados medios de desviación y tiempo para todos los algoritmos considerados.\\
+
+
+\begin{table}[]
+	\centering
+	\begin{tabular}{|c|l|l|}
+		\hline
+		\multicolumn{3}{|c|}{\textbf{ES}}                                                                  \\ \hline
+		\textbf{Caso}          & \multicolumn{1}{c|}{\textbf{Desv}} & \multicolumn{1}{c|}{\textbf{Tiempo}} \\ \hline
+		MDG-a\_1\_n500\_m50    & 4.42                               & 0.001257                             \\ \hline
+		MDG-a\_2\_n500\_m50    & 3.58                               & 0.002094                             \\ \hline
+		MDG-a\_3\_n500\_m50    & 4.78                               & 0.001636                             \\ \hline
+		MDG-a\_4\_n500\_m50    & 4.11                               & 0.001815                             \\ \hline
+		MDG-a\_5\_n500\_m50    & 4.20                               & 0.001338                             \\ \hline
+		MDG-a\_6\_n500\_m50    & 2.50                               & 0.001992                             \\ \hline
+		MDG-a\_7\_n500\_m50    & 5.06                               & 0.000904                             \\ \hline
+		MDG-a\_8\_n500\_m50    & 2.13                               & 0.002258                             \\ \hline
+		MDG-a\_9\_n500\_m50    & 2.60                               & 0.002248                             \\ \hline
+		MDG-a\_10\_n500\_m50   & 3.19                               & 0.001560                             \\ \hline
+		MDG-b\_21\_n2000\_m200 & 1.12                               & 0.301306                             \\ \hline
+		MDG-b\_22\_n2000\_m200 & 1.36                               & 0.247538                             \\ \hline
+		MDG-b\_23\_n2000\_m200 & 1.85                               & 0.132758                             \\ \hline
+		MDG-b\_24\_n2000\_m200 & 1.72                               & 0.109667                             \\ \hline
+		MDG-b\_25\_n2000\_m200 & 1.48                               & 0.138355                             \\ \hline
+		MDG-b\_26\_n2000\_m200 & 1.39                               & 0.175318                             \\ \hline
+		MDG-b\_27\_n2000\_m200 & 1.36                               & 0.150594                             \\ \hline
+		MDG-b\_28\_n2000\_m200 & 1.44                               & 0.162471                             \\ \hline
+		MDG-b\_29\_n2000\_m200 & 1.66                               & 0.145042                             \\ \hline
+		MDG-b\_30\_n2000\_m200 & 1.50                               & 0.142441                             \\ \hline
+		MDG-c\_1\_n3000\_m300  & 1.06                               & 0.336533                             \\ \hline
+		MDG-c\_2\_n3000\_m300  & 1.12                               & 0.464051                             \\ \hline
+		MDG-c\_8\_n3000\_m400  & 0.83                               & 0.613833                             \\ \hline
+		MDG-c\_9\_n3000\_m400  & 1.07                               & 0.608590                             \\ \hline
+		MDG-c\_10\_n3000\_m400 & 0.84                               & 0.612016                             \\ \hline
+		MDG-c\_13\_n3000\_m500 & 0.79                               & 0.755266                             \\ \hline
+		MDG-c\_14\_n3000\_m500 & 0.54                               & 0.746921                             \\ \hline
+		MDG-c\_15\_n3000\_m500 & 0.68                               & 0.745031                             \\ \hline
+		MDG-c\_19\_n3000\_m600 & 0.58                               & 0.867780                             \\ \hline
+		MDG-c\_20\_n3000\_m600 & 0.60                               & 0.861054                             \\ \hline
+	\end{tabular}
+	\caption{ES}
+	\label{table:ES}
+\end{table}
+
+\begin{table}[]
+	\centering
+	\begin{tabular}{|c|l|l|}
+		\hline
+		\multicolumn{3}{|c|}{\textbf{BMB}}                                                                 \\ \hline
+		\textbf{Caso}          & \multicolumn{1}{c|}{\textbf{Desv}} & \multicolumn{1}{c|}{\textbf{Tiempo}} \\ \hline
+		MDG-a\_1\_n500\_m50    & 4.49                               & 0.013815                             \\ \hline
+		MDG-a\_2\_n500\_m50    & 3.89                               & 0.013750                             \\ \hline
+		MDG-a\_3\_n500\_m50    & 4.06                               & 0.013822                             \\ \hline
+		MDG-a\_4\_n500\_m50    & 3.84                               & 0.013881                             \\ \hline
+		MDG-a\_5\_n500\_m50    & 3.83                               & 0.013729                             \\ \hline
+		MDG-a\_6\_n500\_m50    & 3.49                               & 0.013758                             \\ \hline
+		MDG-a\_7\_n500\_m50    & 3.92                               & 0.013730                             \\ \hline
+		MDG-a\_8\_n500\_m50    & 3.18                               & 0.014093                             \\ \hline
+		MDG-a\_9\_n500\_m50    & 3.16                               & 0.013897                             \\ \hline
+		MDG-a\_10\_n500\_m50   & 3.90                               & 0.013568                             \\ \hline
+		MDG-b\_21\_n2000\_m200 & 7.73                               & 0.366589                             \\ \hline
+		MDG-b\_22\_n2000\_m200 & 7.61                               & 0.405210                             \\ \hline
+		MDG-b\_23\_n2000\_m200 & 7.56                               & 0.383877                             \\ \hline
+		MDG-b\_24\_n2000\_m200 & 7.81                               & 0.388696                             \\ \hline
+		MDG-b\_25\_n2000\_m200 & 7.57                               & 0.411305                             \\ \hline
+		MDG-b\_26\_n2000\_m200 & 7.62                               & 0.400185                             \\ \hline
+		MDG-b\_27\_n2000\_m200 & 7.82                               & 0.389223                             \\ \hline
+		MDG-b\_28\_n2000\_m200 & 7.58                               & 0.331120                             \\ \hline
+		MDG-b\_29\_n2000\_m200 & 7.54                               & 0.325514                             \\ \hline
+		MDG-b\_30\_n2000\_m200 & 7.68                               & 0.389257                             \\ \hline
+		MDG-c\_1\_n3000\_m300  & 7.13                               & 2.029940                             \\ \hline
+		MDG-c\_2\_n3000\_m300  & 7.30                               & 1.891329                             \\ \hline
+		MDG-c\_8\_n3000\_m400  & 6.24                               & 3.378783                             \\ \hline
+		MDG-c\_9\_n3000\_m400  & 6.25                               & 3.533600                             \\ \hline
+		MDG-c\_10\_n3000\_m400 & 6.21                               & 3.695669                             \\ \hline
+		MDG-c\_13\_n3000\_m500 & 5.24                               & 5.042132                             \\ \hline
+		MDG-c\_14\_n3000\_m500 & 5.35                               & 5.070244                             \\ \hline
+		MDG-c\_15\_n3000\_m500 & 5.18                               & 5.318703                             \\ \hline
+		MDG-c\_19\_n3000\_m600 & 4.88                               & 6.970146                             \\ \hline
+		MDG-c\_20\_n3000\_m600 & 4.84                               & 6.646882                             \\ \hline
+	\end{tabular}
+	\caption{BMB}
+	\label{table:BMB}
+\end{table}
+
+\begin{table}[]
+	\centering
+	\begin{tabular}{|c|l|l|}
+		\hline
+		\multicolumn{3}{|c|}{\textbf{ILS}}                                                                 \\ \hline
+		\textbf{Caso}          & \multicolumn{1}{c|}{\textbf{Desv}} & \multicolumn{1}{c|}{\textbf{Tiempo}} \\ \hline
+		MDG-a\_1\_n500\_m50    & 2.57                               & 0.006191                             \\ \hline
+		MDG-a\_2\_n500\_m50    & 2.45                               & 0.006330                             \\ \hline
+		MDG-a\_3\_n500\_m50    & 1.94                               & 0.006378                             \\ \hline
+		MDG-a\_4\_n500\_m50    & 1.66                               & 0.006257                             \\ \hline
+		MDG-a\_5\_n500\_m50    & 2.55                               & 0.006336                             \\ \hline
+		MDG-a\_6\_n500\_m50    & 1.20                               & 0.006364                             \\ \hline
+		MDG-a\_7\_n500\_m50    & 0.81                               & 0.009534                             \\ \hline
+		MDG-a\_8\_n500\_m50    & 1.45                               & 0.006148                             \\ \hline
+		MDG-a\_9\_n500\_m50    & 1.19                               & 0.006588                             \\ \hline
+		MDG-a\_10\_n500\_m50   & 1.74                               & 0.006113                             \\ \hline
+		MDG-b\_21\_n2000\_m200 & 1.53                               & 0.292548                             \\ \hline
+		MDG-b\_22\_n2000\_m200 & 1.87                               & 0.339452                             \\ \hline
+		MDG-b\_23\_n2000\_m200 & 1.81                               & 0.325409                             \\ \hline
+		MDG-b\_24\_n2000\_m200 & 1.68                               & 0.342774                             \\ \hline
+		MDG-b\_25\_n2000\_m200 & 1.64                               & 0.319158                             \\ \hline
+		MDG-b\_26\_n2000\_m200 & 1.79                               & 0.350028                             \\ \hline
+		MDG-b\_27\_n2000\_m200 & 1.85                               & 0.378004                             \\ \hline
+		MDG-b\_28\_n2000\_m200 & 1.72                               & 0.350357                             \\ \hline
+		MDG-b\_29\_n2000\_m200 & 1.85                               & 0.346172                             \\ \hline
+		MDG-b\_30\_n2000\_m200 & 1.85                               & 0.347050                             \\ \hline
+		MDG-c\_1\_n3000\_m300  & 2.43                               & 1.481418                             \\ \hline
+		MDG-c\_2\_n3000\_m300  & 2.31                               & 1.658405                             \\ \hline
+		MDG-c\_8\_n3000\_m400  & 2.32                               & 2.819906                             \\ \hline
+		MDG-c\_9\_n3000\_m400  & 2.27                               & 3.090409                             \\ \hline
+		MDG-c\_10\_n3000\_m400 & 2.44                               & 2.850241                             \\ \hline
+		MDG-c\_13\_n3000\_m500 & 2.34                               & 4.969077                             \\ \hline
+		MDG-c\_14\_n3000\_m500 & 2.29                               & 4.948011                             \\ \hline
+		MDG-c\_15\_n3000\_m500 & 2.17                               & 4.770283                             \\ \hline
+		MDG-c\_19\_n3000\_m600 & 2.18                               & 6.817747                             \\ \hline
+		MDG-c\_20\_n3000\_m600 & 2.11                               & 6.470598                             \\ \hline
+	\end{tabular}
+	\caption{ILS}
+	\label{table:ILS}
+\end{table}
+
+\begin{table}[]
+	\centering
+	\begin{tabular}{|c|l|l|}
+		\hline
+		\multicolumn{3}{|c|}{\textbf{ILS-ES}}                                                              \\ \hline
+		\textbf{Caso}          & \multicolumn{1}{c|}{\textbf{Desv}} & \multicolumn{1}{c|}{\textbf{Tiempo}} \\ \hline
+		MDG-a\_1\_n500\_m50    & 2.33                               & 0.014818                             \\ \hline
+		MDG-a\_2\_n500\_m50    & 2.48                               & 0.013207                             \\ \hline
+		MDG-a\_3\_n500\_m50    & 1.50                               & 0.014503                             \\ \hline
+		MDG-a\_4\_n500\_m50    & 1.58                               & 0.014606                             \\ \hline
+		MDG-a\_5\_n500\_m50    & 2.10                               & 0.016733                             \\ \hline
+		MDG-a\_6\_n500\_m50    & 0.63                               & 0.015642                             \\ \hline
+		MDG-a\_7\_n500\_m50    & 2.65                               & 0.013812                             \\ \hline
+		MDG-a\_8\_n500\_m50    & 2.13                               & 0.014266                             \\ \hline
+		MDG-a\_9\_n500\_m50    & 1.73                               & 0.016286                             \\ \hline
+		MDG-a\_10\_n500\_m50   & 2.70                               & 0.014100                             \\ \hline
+		MDG-b\_21\_n2000\_m200 & 2.19                               & 0.315643                             \\ \hline
+		MDG-b\_22\_n2000\_m200 & 2.22                               & 0.314147                             \\ \hline
+		MDG-b\_23\_n2000\_m200 & 2.08                               & 0.312742                             \\ \hline
+		MDG-b\_24\_n2000\_m200 & 2.33                               & 0.282180                             \\ \hline
+		MDG-b\_25\_n2000\_m200 & 2.39                               & 0.278828                             \\ \hline
+		MDG-b\_26\_n2000\_m200 & 2.05                               & 0.280177                             \\ \hline
+		MDG-b\_27\_n2000\_m200 & 2.29                               & 0.278543                             \\ \hline
+		MDG-b\_28\_n2000\_m200 & 1.97                               & 0.281728                             \\ \hline
+		MDG-b\_29\_n2000\_m200 & 1.99                               & 0.282365                             \\ \hline
+		MDG-b\_30\_n2000\_m200 & 2.25                               & 0.282592                             \\ \hline
+		MDG-c\_1\_n3000\_m300  & 2.19                               & 0.521579                             \\ \hline
+		MDG-c\_2\_n3000\_m300  & 2.09                               & 0.520619                             \\ \hline
+		MDG-c\_8\_n3000\_m400  & 1.93                               & 0.624625                             \\ \hline
+		MDG-c\_9\_n3000\_m400  & 1.81                               & 0.616829                             \\ \hline
+		MDG-c\_10\_n3000\_m400 & 1.94                               & 0.627544                             \\ \hline
+		MDG-c\_13\_n3000\_m500 & 1.36                               & 0.762844                             \\ \hline
+		MDG-c\_14\_n3000\_m500 & 1.43                               & 0.760389                             \\ \hline
+		MDG-c\_15\_n3000\_m500 & 1.50                               & 0.835893                             \\ \hline
+		MDG-c\_19\_n3000\_m600 & 1.40                               & 0.974397                             \\ \hline
+		MDG-c\_20\_n3000\_m600 & 1.42                               & 0.960059                             \\ \hline
+	\end{tabular}
+	\caption{ILS-ES}
+	\label{table:ILS_ES}
+\end{table}
+
+
+
+\begin{table}[]
+	\centering
+	\begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+		\hline
+		\multirow{2}{*}{\textbf{Algoritmo}} & \multicolumn{2}{c|}{\textbf{Global}} & \multicolumn{2}{c|}{\textbf{Grupo a}} & \multicolumn{2}{c|}{\textbf{Grupo b}} & \multicolumn{2}{c|}{\textbf{Grupo c}} \\ \cline{2-9} 
+		& \textbf{Desv}    & \textbf{Tiempo}   & \textbf{Desv}    & \textbf{Tiempo}    & \textbf{Desv}    & \textbf{Tiempo}    & \textbf{Desv}    & \textbf{Tiempo}    \\ \hline
+		Greedy                              & 9.20             & 0.525801          & 12.18            & 0.001005           & 9.05             & 0.385110           & 6.36             & 1.617179           \\ \hline
+		BL                                  & 3.59             & 0.730803          & 1.82             & 0.004678           & 4.56             & 0.539808           & 4.40             & 2.226739           \\ \hline
+		ES                                  & 1.98             & 0.277789          & 3.66             & 0.001710           & 1.49             & 0.243831           & 0.81             & 0.742380           \\ \hline
+		BMB                                 & 5.76             & 1.583548          & 3.78             & 0.013804           & 7.65             & 0.993535           & 5.86             & 5.182482           \\ \hline
+		ILS                                 & 1.93             & 1.444443          & 1.75             & 0.006624           & 1.76             & 0.839327           & 2.29             & 4.845195           \\ \hline
+		ILS-ES                              & 1.96             & 0.342057          & 1.98             & 0.014797           & 2.18             & 0.363324           & 1.71             & 0.791136           \\ \hline
+	\end{tabular}
+	\caption{Resultados Globales}
+	\label{table:resultados_globales}
+\end{table}
+
+
+\newpage
+
+\subsection{Análisis}
+
+\subsubsection{Análisis por calidad}
+
+Empezamos viendo que los algoritmos que obtienen las mejores desviaciones son ILS, ILS-ES y ES en este orden, con desviaciones muy similares entre ellos (solo 5 centésimas de diferencia entre el primero y el tercero). Todos ellos se encuentran muy por encima de Búsqueda Local en términos de calidad, y considero que esto está provocado por el aumento de la diversidad. El esquema de enfriamiento de ES añade la posibilidad de avanzar hacia peores soluciones en las primeras iteraciones del algoritmo, lo cual permite reconducir la búsqueda hacia otras zonas a las que no se podría llegar únicamente mediante Búsqueda Local. Por otro lado, el mecanismo que tiene ILS para aumentar la diversidad es mutar la mejor solución encontrada hasta el momento justo antes de aplicarle BL o ES.
+
+También es importante destacar que ILS-ES no aporta una gran mejora con respecto a ES, e incluso es ligeramente superado por ILS. Por tanto, parece que el hecho de combinar los mecanismos de aumento de diversidad aportados por ES e ILS no nos permite obtener un mejor algoritmo.
+
+En cuanto a BMB, vemos que sus resultados son incluso peores que Búsqueda Local. A pesar de que BMB reduzca la dependencia con respecto a la solución inicial (lo cual puede verse como un aumento de la diversidad), creo que es superado por BL precisamente porque apenas es capaz de explotar las soluciones iniciales generadas en cada iteración. Esto se debe a que repartimos el número de evaluaciones totales entre las 10 iteraciones, por lo tanto queda un número demasiado reducido de evaluaciones para la Búsqueda Local que ejecutamos en cada iteración.
+
+Si analizamos las desviaciones por grupos, podemos ver que en el \textit{Grupo a} (instancias con menor tamaño), el algoritmo que obtiene los mejores resultados es ILS, seguido muy de cerca por BL e ILS-ES. No es extraño que BL sea el segundo mejor algoritmo, pues al estar ejecutándose sobre instancias de menor tamaño, los espacios de búsqueda no son muy grandes, luego la baja diversidad de BL no se ve tan penalizada. Sin embargo, los resultados de ILS son ligeramente mejores porque consigue introducir algo de diversidad con cada mutación sin que esto sea contraproducente para el algoritmo.
+
+En el \textit{Grupo b} (instancias con tamaño intermedio), comprobamos que ahora ES es el mejor algoritmo, seguido por ILS con resultados ligeramente peores. Considero que ES tiene un mejor desempeño que ILS porque, a pesar de que ambos sean algoritmos con mecanismos que aportan diversidad, ES consigue darle un mayor peso a ésta en las primeras iteraciones mientras que en las últimas da mayor prioridad a la explotación (se comporta casi igual que una Búsqueda Local). Sin embargo, ILS añade diversidad en todas las iteraciones mediante el mismo procedimiento de mutación, lo cual creo que puede llegar a ser incluso contraproducente en las últimas iteraciones.
+
+Por último, para el \textit{Grupo c} (instancias con mayor tamaño) vemos que las diferencias se acentúan aun más. Por lo ya comentado para el \textit{Grupo b}, ES consigue los mejores resultados con diferencia. También podemos ver que el segundo mejor es ILS-ES, justo por delante de ILS, el tercero mejor.
+
+
+
+\subsubsection{Análisis por tiempos}
+
+El algoritmo que obtiene el mejor tiempo medio es ES. El segundo mejor es ILS-ES, con menos de una décima de diferencia. Sorprendentemente, Greedy solo llega a ser el tercero mejor con casi dos décimas más que ILS-ES. Por tanto, parece que globalmente los algoritmos que hacen uso de ES son los más rápidos.
+
+Si nos restringimos al \textit{Grupo a}, vemos que los mejores algoritmos son Greedy y ES, habiendo entre ellos menos de una milésima de diferencia.
+
+Para el \textit{Grupo b}, se tiene que ES es el mejor, sacando una décima de diferencia tanto a Greedy como a ILS-ES.
+
+Por último, en el \textit{Grupo c}, la rápidez de los algoritmos ES e ILS-ES es muy clara, pues ambos obtienen tiempo inferiores al segundo, además de que superan con casi un segundo de diferencia a Greedy, el tercero mejor.
+
+
+\subsubsection{Conclusiones}
+
+En términos de calidad, podemos concluir que ILS junto con BL son los mejores algoritmos en instancias de MDP con tamaños pequeños (\textit{Grupo a}), mientras que para instancias con tamaños intermedios o grandes (\textit{Grupo b} y \textit{Grupo c}) el algoritmo que obtiene los mejores resultados es ES.
+
+Atendiendo a los tiempos, ES es el algoritmo con los mejores resultados, obteniendo mayores diferencias con respecto al resto de algoritmos cuanto mayor es el tamaño de la instancia sobre la que se ejecutan. A pesar de ello, como para tamaños de instancia pequeños las diferencias en tiempos son del orden de milésimas, considero que en estos casos es mucho más recomendable usar ILS, o incluso BL.
+
+
+
+
+
+
+\end{document}
+
+
+

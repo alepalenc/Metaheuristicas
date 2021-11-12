@@ -1,0 +1,6 @@
+PROJECT(cec17)
+ADD_EXECUTABLE(testmimh1 "testmimh1.cc")
+ADD_EXECUTABLE(testmimh2 "testmimh2.cc")
+ADD_LIBRARY("cec17_test_func" SHARED "cec17_test_func.c" "cec17.c")
+TARGET_LINK_LIBRARIES(testmimh1 "cec17_test_func")
+TARGET_LINK_LIBRARIES(testmimh2 "cec17_test_func")
